@@ -27,6 +27,8 @@ public sealed class NetworkConnection : IDisposable
     /// </summary>
     private StreamWriter? _writer = null;
 
+    private readonly object _lock = new();
+
     /// <summary>
     ///   Initializes a new instance of the <see cref="NetworkConnection"/> class.
     ///   <para>
@@ -65,8 +67,10 @@ public sealed class NetworkConnection : IDisposable
     {
         get
         {
-            // TODO: implement this
-            throw new NotImplementedException();
+            if (_tcpClient == null || !_tcpClient.Connected)
+                return false;
+
+            return !(_tcpClient.Client.Poll(1, SelectMode.SelectRead) && _tcpClient.Client.Available == 0);
         }
     }
 
@@ -78,8 +82,9 @@ public sealed class NetworkConnection : IDisposable
     /// <param name="port"> The port, e.g., 11000. </param>
     public void Connect( string host, int port )
     {
-        // TODO: implement this
-        throw new NotImplementedException();
+        _tcpClient.Connect(host, port);
+        _reader = new StreamReader(_tcpClient.GetStream(), Encoding.UTF8);
+        _writer = new StreamWriter(_tcpClient.GetStream(), Encoding.UTF8) { AutoFlush = true };
     }
 
 
@@ -94,8 +99,13 @@ public sealed class NetworkConnection : IDisposable
     /// <param name="message"> The string of characters to send. </param>
     public void Send( string message )
     {
-        // TODO: Implement this
-        throw new NotImplementedException();
+        if (!IsConnected || _writer == null)
+            throw new InvalidOperationException("Connection is not active or writer is unavailable.");
+
+        lock (_lock)
+        {
+            _writer.WriteLine(message);
+        }
     }
 
 
@@ -108,8 +118,10 @@ public sealed class NetworkConnection : IDisposable
     /// <returns> The contents of the message. </returns>
     public string ReadLine( )
     {
-        // TODO: implement this
-        throw new NotImplementedException();
+        if (!IsConnected || _reader == null)
+            throw new InvalidOperationException("Connection is not active or reader is unavailable.");
+
+        return _reader.ReadLine() ?? throw new InvalidOperationException("Error");
 
     }
 
@@ -119,8 +131,15 @@ public sealed class NetworkConnection : IDisposable
     /// </summary>
     public void Disconnect( )
     {
-        //TODO: implement this
-        throw new NotImplementedException();
+        lock (_lock)
+        {
+            _reader?.Dispose();
+            _writer?.Dispose();
+            _tcpClient.Close();
+        }
+
+        _reader = null;
+        _writer = null;
     }
 
     /// <summary>
