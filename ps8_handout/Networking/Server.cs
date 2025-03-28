@@ -26,7 +26,29 @@ public static class Server
     /// <param name="port"> The port (e.g., 11000) to listen on. </param>
     public static void StartServer( Action<NetworkConnection> handleConnect, int port )
     {
-        // TODO: Implement this
-        throw new NotImplementedException();
+        //下面是新加的
+
+        TcpListener listener = new TcpListener(IPAddress.Any, port);
+
+        listener.Start();
+
+        new Thread(() =>
+        {
+            while (true)
+            {
+                try
+                {
+                    TcpClient tcpClient = listener.AcceptTcpClient();
+
+                    NetworkConnection connection = new NetworkConnection(tcpClient);
+
+                    new Thread(() => handleConnect(connection)).Start();
+                }
+                catch (Exception)
+                {
+
+                }
+            }
+        }).Start();
     }
 }
