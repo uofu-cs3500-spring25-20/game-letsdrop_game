@@ -14,7 +14,7 @@ namespace CS3500.Networking;
 /// </summary>
 public static class Server
 {
-
+    private static List<StreamWriter> clients = new();
     /// <summary>
     ///   Wait on a TcpListener for new connections. Alert the main program
     ///   via a callback (delegate) mechanism.
@@ -38,15 +38,15 @@ public static class Server
             {
                 try
                 {
-                    TcpClient tcpClient = listener.AcceptTcpClient();
+                    TcpClient client = listener.AcceptTcpClient();
 
-                    NetworkConnection connection = new NetworkConnection(tcpClient);
+                    NetworkConnection connection = new NetworkConnection(client);
 
                     new Thread(() => handleConnect(connection)).Start();
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
-
+                    Console.WriteLine("Error accepting client: " + e.Message);
                 }
             }
         }).Start();
