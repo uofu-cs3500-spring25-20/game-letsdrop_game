@@ -12,13 +12,19 @@ namespace CS3500.Chatting;
 /// </summary>
 public partial class ChatServer
 {
-    // 保存所有客户端连接
+    /// <summary>
+    /// Stores all currently connected clients.
+    /// </summary>
     private static readonly List<NetworkConnection> clients = new();
 
-    // 保存客户端连接对应的名字
+    /// <summary>
+    /// Maps each client connection to its corresponding username.
+    /// </summary>
     private static readonly Dictionary<NetworkConnection, string> clientNames = new();
 
-    // 锁对象，防止多线程同时修改共享数据
+    /// <summary>
+    /// An object used to lock shared resources for thread safety.
+    /// </summary>
     private static readonly object lockObj = new();
 
     /// <summary>
@@ -39,41 +45,41 @@ public partial class ChatServer
     ///     replies to a client.
     ///   </pre>
     /// </summary>
-    ///
+    /// <param name="connection">The client's network connection.</param>
     private static void HandleConnect( NetworkConnection connection )
     {
         // handle all messages until disconnect.
         try
         {
-            //下面是我新加的
+            // Receive the first message, treat it as the username
             string name = connection.ReadLine();
 
             lock (lockObj)
             {
+                // Add client to the connection list and name map
                 clients.Add(connection);
                 clientNames[connection] = name;
             }
-            // 以上
 
             while ( true )
             {
-                //下面修改并且新增
                 string message = connection.ReadLine();
                 string fullMessage = name + ": " + message;
 
                 lock (lockObj)
                 {
+                    // Broadcast the message to all clients
                     foreach (var client in clients)
                     {
                         client.Send(fullMessage);
                     }
                 }
-            }   //以上
+            }
         }
         catch ( Exception )
         {
             // do anything necessary to handle a disconnected client in here 
-            //下面新加的
+            //Handle disconnection: remove the client from server state
             lock (lockObj)
             {
                 clients.Remove(connection);

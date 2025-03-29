@@ -27,6 +27,9 @@ public sealed class NetworkConnection : IDisposable
     /// </summary>
     private StreamWriter? _writer = null;
 
+    /// <summary>
+    /// A lock object for thread-safe access to sending.
+    /// </summary>
     private readonly object _lock = new();
 
     /// <summary>
